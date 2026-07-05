@@ -6,6 +6,7 @@
     "@types/three": "^0.185.0",
     "expo": "~57.0.2",
     "expo-build-properties": "~57.0.3",
+    "expo-camera": "~57.0.0",
     "expo-status-bar": "~57.0.0",
     "react": "19.2.3",
     "react-native": "0.86.0",
