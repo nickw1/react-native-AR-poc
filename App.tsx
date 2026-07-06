@@ -17,7 +17,6 @@ export default function App() {
     if (context) {
       initScene(context);
     }
-    console.log("Requesting permission");
     requestPermission();
   }, [permission?.granted]);
 
