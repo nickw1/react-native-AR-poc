@@ -2,9 +2,11 @@ import { Ref } from 'react';
 import { Canvas, CanvasRef } from 'react-native-webgpu';
 import { CameraView } from 'expo-camera';
 import styles from '../styles';
+import type { Orientation } from '../types';
 
 interface ARComponentProps {
     canvasRef: Ref<CanvasRef>;
+    orientation: Orientation;
 }
 
 export default function ARComponent({canvasRef} : ARComponentProps) {
