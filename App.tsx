@@ -12,7 +12,6 @@ import AHRS from 'ahrs';
 import type { SensorInfo, SensorType } from './types';
 import Misc from './misc';
 
-
 export default function App() {
 
   const [permission, requestPermission] = useCameraPermissions();
@@ -53,7 +52,13 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.DEFAULT);
+    // Lock into landscape for now - what we really want is to lock into either landscape or portrait but disable
+    // reverse landscape or reverse portrait. On the todo list.
+    ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.LANDSCAPE);
+
+    // As we're locked into landscape currently, we don't need to do the below.
+    /*
+
     orientationRef.current = ScreenOrientation.addOrientationChangeListener((event) => {
       switch (event.orientationInfo.orientation) {
         case ScreenOrientation.Orientation.PORTRAIT_UP:
@@ -69,12 +74,14 @@ export default function App() {
           Misc.orientation = 0.5 * Math.PI;
 
       }
+     
       const canv = canvasRef.current!.getContext('webgpu')!.canvas as HTMLCanvasElement;
       if (cameraRef.current) {
         cameraRef.current.aspect = canv.clientWidth / canv.clientHeight;
         cameraRef.current.updateProjectionMatrix();
       }
     });
+     */
 
     return () => {
       orientationRef.current?.remove();
@@ -102,13 +109,23 @@ export default function App() {
       const ahrsAngles = madgwickRef.current.getEulerAngles();
 
       // These are as the web device orientation API would give us; alpha=heading, beta=pitch, gamma=roll, but we have to swap pitch and
-      // roll as described above. Tested to verify consistency with web device orientation API.
-      Misc.sensorAngles.alpha = ahrsAngles.heading;  // -compass bearing (west +, east -)
-      Misc.sensorAngles.beta = ahrsAngles.roll; // pitch
-      Misc.sensorAngles.gamma = ahrsAngles.pitch; // roll
-
-
+      // roll as described above on portrait. On landscape we just have to negate pitch. Tested to verify consistency with web device orientation API.
+      // The device orientation API values are relative to geographical orientation only while the AHRS angles depend on local device orientation,
+      // hence different settings for landscape and portrait.
+      Misc.sensorAngles.alpha = ahrsAngles.heading; // -compass bearing (west +, east -)
      
+      // portrait
+      // Misc.sensorAngles.beta = ahrsAngles.roll; // pitch
+      // Misc.sensorAngles.gamma = ahrsAngles.pitch; // roll
+      
+      // landscapeW
+      Misc.sensorAngles.beta = -ahrsAngles.pitch;
+      Misc.sensorAngles.gamma = ahrsAngles.roll;
+
+
+
+      console.log(`heading ${Misc.sensorAngles.alpha} pitch ${Misc.sensorAngles.beta} roll ${Misc.sensorAngles.gamma}`);
+
       // Approach from LocAR DeviceOrientationControls and ultimately from the three.js DeviceOrientationControls example.
       // The problem we have is that three.js uses a different coordinate system to the device orientation API.
       // By my understanding: the rotation order should be heading, pitch, roll, which in the device orientation API corresponds to
@@ -118,17 +135,17 @@ export default function App() {
       // YXZ order i.e. heading-pitch-roll).
 
       const q = new THREE.Quaternion();
-      q.setFromEuler(new THREE.Euler(Misc.sensorAngles.beta, Misc.sensorAngles.alpha, - Misc.sensorAngles.gamma, 'YXZ'));
+      q.setFromEuler(new THREE.Euler(Misc.sensorAngles.beta, Misc.sensorAngles.alpha, -Misc.sensorAngles.gamma, 'YXZ'));
 
       cameraRef.current?.quaternion?.copy(q);
-    
+
       // Device will be held upright, not flat
-      cameraRef.current?.quaternion?.multiply(Misc.correctToUpright);
+      q.multiply(Misc.correctToUpright);
 
-      // Further correct for specific orientation (e.g. portrait, landscape)
-      const orientQuat = new THREE.Quaternion().setFromAxisAngle(Misc.zVector, -Misc.orientation);
-      cameraRef.current?.quaternion?.multiply(orientQuat);
-
+      // Further correct for specific orientation (e.g. portrait, landscape) - not doing for now as we're locking into landscape
+      //  const orientQuat = new THREE.Quaternion().setFromAxisAngle(Misc.zVector, -Misc.orientation);
+      //  q.multiply(orientQuat);
+      cameraRef.current?.quaternion.copy(q);
     }
   }
 

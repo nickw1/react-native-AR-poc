@@ -12,7 +12,7 @@ To add React Native support to [LocAR.js](https://github.com/AR-js-org/locar.js)
 
 - Sensor values obtained.
 
-- Sensors applied to 3D scene. Working nicely in portrait, a bit quirky in landscape.
+- Sensors applied to 3D scene. Locked into landscape for now, we ideally want "normal" landscape and portrait but not the other 2 orientations.
 
 ## To do
 
